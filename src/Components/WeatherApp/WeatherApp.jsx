@@ -209,9 +209,6 @@ export const WeatherApp = () => {
           </div>
         </div>
       </div>
-      <div className="developed-by">
-        Developed by Sai Cett
-      </div>
     </div>
   );
 };
