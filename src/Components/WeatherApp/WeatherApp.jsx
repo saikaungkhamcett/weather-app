@@ -22,11 +22,15 @@ import n13 from '../Assets/13n.svg';
 import d50 from '../Assets/50d.svg';
 import n50 from '../Assets/50n.svg';
 
+const config = {
+  api_key: 'a1771e43fc64b6c768e2167add5db658',
+  geo_api_key: 'd4c4d6789f154c83adf969f4bb579bc4',
+};
+
 export const WeatherApp = () => {
-  const api_key = 'a1771e43fc64b6c768e2167add5db658';
-  const [wicon, setWicon] = useState();
-  const [city, setCity] = useState(''); 
-  let foundCity = "";
+  const [wicon, setWicon] = useState(null);
+  const [city, setCity] = useState('');
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     // Get the user's current location and set the city state
@@ -38,8 +42,7 @@ export const WeatherApp = () => {
             const longitude = position.coords.longitude;
 
             // Reverse geocode to get the city from coordinates
-            const geo_api_key = 'd4c4d6789f154c83adf969f4bb579bc4';
-            const geo_api_url = `https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=${geo_api_key}`;
+            const geo_api_url = `https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=${config.geo_api_key}`;
 
             const response = await fetch(geo_api_url);
             if (!response.ok) {
@@ -48,103 +51,34 @@ export const WeatherApp = () => {
 
             const data = await response.json();
             if (data.results.length > 0) {
-              foundCity = data.results[0].components.town;
+              const foundCity = data.results[0].components.town;
               setCity(foundCity);
+              updateWeatherData(foundCity);
             }
-
-            let url= `https://api.openweathermap.org/data/2.5/weather?q=${foundCity}&appid=${api_key}&units=Imperial`;
-
-            try{
-              let response = await fetch(url);
-              let data = await response.json();
-        
-              const humidity = document.getElementsByClassName("humidity-percent");
-              const wind = document.getElementsByClassName("wind-speed");
-              const temperature = document.getElementsByClassName("weather-temp");
-              const location = document.getElementsByClassName("weather-location");
-        
-              humidity[0].innerHTML = Math.round(data.main.humidity)+"%";
-              wind[0].innerHTML = Math.round(data.wind.speed)+" mph";
-              temperature[0].innerHTML = Math.round(data.main.temp)+"°F";
-              location[0].innerHTML = data.name;
-        
-              
-              if (data.weather[0].icon==="01d") setWicon(d01);
-              else if (data.weather[0].icon==="01n") setWicon(n01);
-              else if (data.weather[0].icon==="02d") setWicon(d02);
-              else if (data.weather[0].icon==="02n") setWicon(n02);
-              else if (data.weather[0].icon==="03d") setWicon(d03);
-              else if (data.weather[0].icon==="03n") setWicon(n03);
-              else if (data.weather[0].icon==="04d") setWicon(d04);
-              else if (data.weather[0].icon==="04n") setWicon(n04);
-              else if (data.weather[0].icon==="09d") setWicon(d09);
-              else if (data.weather[0].icon==="09n") setWicon(n09);
-              else if (data.weather[0].icon==="10d") setWicon(d10);
-              else if (data.weather[0].icon==="10n") setWicon(n10);
-              else if (data.weather[0].icon==="11d") setWicon(d11);
-              else if (data.weather[0].icon==="11n") setWicon(n11);
-              else if (data.weather[0].icon==="13d") setWicon(d13);
-              else if (data.weather[0].icon==="13n") setWicon(n13);
-              else if (data.weather[0].icon==="50d") setWicon(d50);
-              else if (data.weather[0].icon==="50n") setWicon(n50);
-    
-            } catch (error){
-              alert("Unable to find the city.")
-            }
-          }
-          catch (error) {
-            alert('Error: ' + error);
+          } catch (error) {
+            setError('Error fetching weather data.');
           }
         },
         function (error) {
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              alert('User denied the request for Geolocation.');
-              break;
-            case error.POSITION_UNAVAILABLE:
-              alert('Location information is unavailable.');
-              break;
-            case error.TIMEOUT:
-              alert('The request to get user location timed out.');
-              break;
-            default:
-              alert('An unknown error occurred.');
-              break;
-          }
+          setError('Error fetching geolocation data.');
         }
       );
     } else {
-      alert('Geolocation is not supported in your browser');
+      setError('Geolocation is not supported in your browser');
     }
   }, []);
 
-  const search = async (event) => {
-    event.preventDefault(); // Prevent form submission
-
-    const element = document.getElementsByClassName('city-input');
-
-    if (element[0].value === '') {
-      return 0;
-    }
-
-    const url = `https://api.openweathermap.org/data/2.5/weather?q=${element[0].value}&appid=${api_key}&units=Imperial`;
+  const updateWeatherData = async (cityName) => {
+    const url = `https://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${config.api_key}&units=Imperial`;
 
     try {
       const response = await fetch(url);
       const data = await response.json();
 
       // Update the weather information and icon
-      const humidity = document.getElementsByClassName('humidity-percent');
-      const wind = document.getElementsByClassName('wind-speed');
-      const temperature = document.getElementsByClassName('weather-temp');
-      const location = document.getElementsByClassName('weather-location');
+      const humidity = Math.round(data.main.humidity) + '%';
+      const windSpeed = Math.round(data.wind.speed) + ' mph';
 
-      humidity[0].innerHTML = Math.round(data.main.humidity) + '%';
-      wind[0].innerHTML = Math.round(data.wind.speed) + ' mph';
-      temperature[0].innerHTML = Math.round(data.main.temp) + '°F';
-      location[0].innerHTML = data.name;
-
-      // Update the weather icon based on weather condition
       if (data.weather[0].icon==="01d") setWicon(d01);
       else if (data.weather[0].icon==="01n") setWicon(n01);
       else if (data.weather[0].icon==="02d") setWicon(d02);
@@ -163,9 +97,27 @@ export const WeatherApp = () => {
       else if (data.weather[0].icon==="13n") setWicon(n13);
       else if (data.weather[0].icon==="50d") setWicon(d50);
       else if (data.weather[0].icon==="50n") setWicon(n50);
+
+      // Update the weather data in the UI
+      document.querySelector('.humidity-percent').textContent = humidity;
+      document.querySelector('.wind-speed').textContent = windSpeed;
+      document.querySelector('.weather-temp').textContent = Math.round(data.main.temp) + '°F';
+      document.querySelector('.weather-location').textContent = data.name;
     } catch (error) {
-      alert('Unable to find the city.');
+      setError('Unable to find the city.');
     }
+  };
+
+  const search = async (event) => {
+    event.preventDefault(); // Prevent form submission
+
+    const element = document.querySelector('.city-input');
+
+    if (element.value === '') {
+      return;
+    }
+
+    updateWeatherData(element.value);
   };
 
   return (
@@ -184,7 +136,7 @@ export const WeatherApp = () => {
             }}
           />
           <div className='search-icon'>
-            <img src={search_icon} alt='' onClick={search}/>
+            <img src={search_icon} alt='' onClick={search} />
           </div>
         </div>
       </form>
@@ -209,6 +161,7 @@ export const WeatherApp = () => {
           </div>
         </div>
       </div>
+      {error && <div className='error-message'>{error}</div>}
     </div>
   );
 };
